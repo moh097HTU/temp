@@ -1,0 +1,43 @@
+# Bench Mode Configuration - PX4 v1.16.0
+# THRUST IS ALWAYS ZERO IN THIS MODE
+
+mode: bench
+px4_version: "1.16.0"
+
+control:
+  # Thrust is DISABLED in bench mode - safety critical
+  thrust_enabled: false
+  thrust_min: 0.0
+  thrust_max: 0.0
+  
+  # Conservative limits for bench testing
+  roll_limit_deg: 20.0
+  pitch_limit_deg: 10.0
+  
+  # Slew rate limits (degrees per second)
+  roll_slew_rate_deg_s: 30.0
+  pitch_slew_rate_deg_s: 20.0
+  
+  # EMA filter alpha (0-1, higher = faster response)
+  roll_ema_alpha: 0.3
+  pitch_ema_alpha: 0.3
+  
+  # Range to thrust (disabled in bench)
+  range_to_thrust_gain: 0.0
+
+safety:
+  # Track timeout - go to neutral if no valid track for this long
+  track_timeout_ms: 500.0
+  
+  # Telemetry timeout - go to neutral if no FC telemetry
+  telemetry_timeout_ms: 1000.0
+  
+  # Failsafe action
+  failsafe_action: "neutral"
+
+offboard:
+  # Setpoint streaming rate
+  setpoint_rate_hz: 30
+  
+  # Heartbeat rate
+  heartbeat_rate_hz: 1

@@ -1,0 +1,14 @@
+# ByteTrack/OCSORT Tracker Configuration
+
+tracker:
+  # Max frames to keep lost tracks before removing
+  max_age: 30
+  
+  # Minimum detections before confirming a track
+  min_hits: 3
+  
+  # IOU threshold for associating detections to tracks
+  iou_threshold: 0.3
+  
+  # Track history buffer size
+  track_buffer: 30

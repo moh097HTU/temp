@@ -1,0 +1,8 @@
+# udev rule for TELEM1 serial port
+# Creates symlink /dev/ttyTELEM1 for consistent access
+
+# Jetson Nano UART - adjust idVendor/idProduct for your adapter
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", SYMLINK+="ttyTELEM1", MODE="0666"
+
+# For built-in Jetson UART (ttyTHS1)
+KERNEL=="ttyTHS1", MODE="0666", GROUP="dialout"

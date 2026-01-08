@@ -1,0 +1,22 @@
+# OAK-D Lite Camera Configuration
+
+camera:
+  type: "OAK-D-LITE"
+  
+  rgb:
+    width: 1920
+    height: 1080
+    fps: 30
+  
+  depth:
+    enabled: true
+    width: 640
+    height: 400
+  
+  # Camera intrinsics - CALIBRATE FOR YOUR SPECIFIC CAMERA
+  # These are placeholder values
+  intrinsics:
+    fx: 1000.0    # Focal length X (pixels)
+    fy: 1000.0    # Focal length Y (pixels)
+    cx: 960.0     # Principal point X (image center)
+    cy: 540.0     # Principal point Y (image center)

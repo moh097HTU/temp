@@ -1,0 +1,14 @@
+[Unit]
+Description=MAVProxy Serial to UDP Router
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/mavproxy.py --master=/dev/ttyTHS1 --baudrate=57600 --out=udp:127.0.0.1:14551 --out=udp:${GCS_IP}:14550 --non-interactive
+Restart=on-failure
+RestartSec=5
+Environment=GCS_IP=192.168.1.100
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+# MAVLink Configuration
+
+connection:
+  # UDP connection to MAVProxy (localhost)
+  host: "127.0.0.1"
+  port: 14551
+
+# Component identification
+ids:
+  system_id: 255        # Companion computer
+  component_id: 190     # MAV_COMP_ID_ONBOARD_COMPUTER
+  target_system: 1      # Flight controller
+  target_component: 1

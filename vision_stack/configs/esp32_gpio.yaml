@@ -1,0 +1,21 @@
+# ESP32 GPIO Configuration
+
+gpio:
+  # BCM GPIO pins for battery signals
+  bat1_pin: 17
+  bat2_pin: 18
+  
+  # Debounce time (ms)
+  debounce_ms: 50.0
+  
+  # Use internal pull-up resistors
+  pull_up: true
+  
+  # Active low: if true, LOW = active
+  active_low: false
+
+# GPIO read rate (Hz)
+read_rate_hz: 20.0
+
+# ZMQ publish rate (Hz) - keep low for bandwidth
+publish_rate_hz: 2.0

@@ -1,0 +1,17 @@
+# Control Configuration
+
+gains:
+  # Yaw error to roll setpoint (deg/rad)
+  yaw_to_roll: 30.0
+  
+  # Pitch error to pitch setpoint (deg/rad)
+  pitch_to_pitch: 20.0
+
+deadband:
+  # Ignore errors smaller than these thresholds
+  yaw_rad: 0.02
+  pitch_rad: 0.02
+  range_m: 0.5
+
+# Processing rate
+update_rate_hz: 30.0

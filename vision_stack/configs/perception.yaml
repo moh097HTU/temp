@@ -1,0 +1,19 @@
+# Perception Configuration
+
+detector:
+  # YOLO model path (relative to vision_stack or absolute)
+  model_path: "models/best.pt"
+  
+  # Detection thresholds
+  confidence_threshold: 0.2
+  iou_threshold: 0.2
+  max_detections: 100
+  
+  # Device: "0" for first GPU, "cpu" for CPU
+  device: "0"
+  
+  # Optional: filter to specific classes (COCO class IDs)
+  # classes: [0]  # Only detect persons
+
+# Target processing rate
+target_fps: 30.0

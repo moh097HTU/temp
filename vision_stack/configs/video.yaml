@@ -1,0 +1,21 @@
+# Video Streaming Configuration
+
+stream:
+  # GCS IP address (set via environment or here)
+  gcs_ip: "${GCS_IP:-192.168.1.100}"
+  
+  # UDP port for RTP stream
+  port: 5600
+  
+  # Resolution (downscaled from camera for bandwidth)
+  width: 1280
+  height: 720
+  
+  # Frame rate
+  fps: 30
+  
+  # Bitrate (kbps)
+  bitrate_kbps: 2000
+  
+  # Encoder: "x264" (CPU) or "nvenc" (Jetson GPU)
+  encoder: "nvenc"

@@ -1,0 +1,28 @@
+# Targeting Configuration
+
+lock:
+  # Time before lock is considered lost (ms)
+  lock_timeout_ms: 500.0
+  
+  # Time to try reacquiring before giving up (ms)
+  reacquire_timeout_ms: 2000.0
+  
+  # IOU threshold for matching tracks
+  iou_threshold: 0.2
+  
+  # Max pixel distance for pixel-based selection
+  max_pixel_distance: 100.0
+
+error:
+  # Desired distance to target (meters)
+  desired_range_m: 10.0
+  
+  # Valid depth range
+  min_range_m: 3.0
+  max_range_m: 50.0
+  
+  # Percentile for ROI depth calculation (50 = median)
+  depth_percentile: 50.0
+
+# Processing rate
+update_rate_hz: 30.0

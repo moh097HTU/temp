@@ -1,0 +1,18 @@
+# MAVProxy Configuration
+
+connection:
+  # Serial port to FC TELEM1
+  serial_port: "/dev/ttyTHS1"
+  baudrate: 57600
+
+outputs:
+  # Local UDP for Jetson apps
+  local_port: 14551
+  
+  # GCS UDP (set via environment variable or here)
+  gcs_ip: "${GCS_IP:-192.168.1.100}"
+  gcs_port: 14550
+
+options:
+  daemon: true
+  logfile: "/var/log/mavproxy.log"

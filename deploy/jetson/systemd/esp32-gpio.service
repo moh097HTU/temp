@@ -1,0 +1,14 @@
+[Unit]
+Description=ESP32 GPIO Battery Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/jetson/drone_system/vision_stack
+ExecStart=/usr/bin/python3 -m src.main gpio --config-dir configs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

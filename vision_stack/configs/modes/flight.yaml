@@ -1,0 +1,39 @@
+# Flight Mode Configuration - PX4 v1.16.0
+# WARNING: Only use when ready for actual flight testing
+
+mode: flight
+px4_version: "1.16.0"
+
+control:
+  # Thrust is ENABLED in flight mode
+  thrust_enabled: true
+  thrust_min: 0.3
+  thrust_max: 0.8
+  
+  # Higher limits for actual maneuvering
+  roll_limit_deg: 45.0
+  pitch_limit_deg: 20.0
+  
+  # Faster slew rates for responsiveness
+  roll_slew_rate_deg_s: 60.0
+  pitch_slew_rate_deg_s: 30.0
+  
+  # Tighter EMA filtering for smoother response
+  roll_ema_alpha: 0.2
+  pitch_ema_alpha: 0.2
+  
+  # Range error to thrust gain (m -> thrust)
+  range_to_thrust_gain: 0.1
+
+safety:
+  # Tighter timeouts for flight
+  track_timeout_ms: 300.0
+  telemetry_timeout_ms: 500.0
+  
+  # Failsafe action - exit to loiter mode
+  failsafe_action: "loiter"
+
+offboard:
+  # Higher rate for smoother control
+  setpoint_rate_hz: 50
+  heartbeat_rate_hz: 2

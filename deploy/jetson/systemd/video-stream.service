@@ -1,0 +1,15 @@
+[Unit]
+Description=Video Stream to GCS
+After=network.target
+
+[Service]
+Type=simple
+User=jetson
+WorkingDirectory=/home/jetson/drone_system/vision_stack
+ExecStart=/usr/bin/python3 -m src.main video --config-dir configs --gcs-ip ${GCS_IP}
+Restart=on-failure
+RestartSec=5
+Environment=GCS_IP=192.168.1.100
+
+[Install]
+WantedBy=multi-user.target
