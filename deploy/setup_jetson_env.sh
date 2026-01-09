@@ -42,8 +42,13 @@ if [ ! -f "/usr/local/lib/libmpi_cxx.so.40" ]; then
     sudo ldconfig
     cd ..
     rm -rf openmpi-4.0.3 openmpi-4.0.3.tar.gz
+    
+    # Add to LD_LIBRARY_PATH
+    echo 'export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 else
     echo "OpenMPI 4.0.3 seems to be installed."
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 fi
 
 # 2. Install PyTorch & Torchvision for Jetson Nano (Python 3.8 + aarch64)
@@ -55,23 +60,33 @@ cd build_temp
 # Install gdown to download from Google Drive
 python3.8 -m pip install gdown
 
-# Download PyTorch 1.12.0
-# ID: 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e -> torch-1.12.0a0+...
-echo "Downloading PyTorch 1.12.0..."
-gdown 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e
-TORCH_WHEEL=$(find . -maxdepth 1 -name "torch*.whl" | head -n 1)
-python3.8 -m pip install "$TORCH_WHEEL"
+# 2. Install PyTorch & Torchvision for Jetson Nano (Python 3.8 + aarch64)
+# Source: KumaTea (verified compatible wheels for older GLIBC)
+# We use PyTorch 1.8.1 and Torchvision 0.9.1
+echo "[2/5] Installing PyTorch 1.8.1 & Torchvision 0.9.1..."
 
-# Download Torchvision 0.13.0
-# We need 0.13.0 for PyTorch 1.12.0. The previous ID was for 0.14/1.13.
-# Let's find the ID for 0.13.0.
-# From the subagent output in Step 75, I recall seeing 0.13.0.
-# Link: https://drive.google.com/file/d/11DPKcWzLjZa5kRXRodRJ3t9md0EMydhj/view?usp=sharing
-# ID: 11DPKcWzLjZa5kRXRodRJ3t9md0EMydhj
-echo "Downloading Torchvision 0.13.0..."
-gdown 11DPKcWzLjZa5kRXRodRJ3t9md0EMydhj
-VISION_WHEEL=$(find . -maxdepth 1 -name "torchvision*.whl" | head -n 1)
-python3.8 -m pip install "$VISION_WHEEL"
+# Convert the html to a package index url format if possible, or just download wheels directly.
+# The URL `https://torch.kmtea.eu/whl/stable.html` is an index.
+# We will use `--extra-index-url` to install.
+
+# Note: numpy<2 is needed.
+python3.8 -m pip install "numpy<1.24" 
+
+echo "Installing PyTorch 1.8.1 from KumaTea..."
+python3.8 -m pip install torch==1.8.1 torchvision==0.9.1 --extra-index-url https://torch.kmtea.eu/whl/stable-cn.html
+
+# Fallback: if index fails, we can wget the file, but index is cleaner.
+# URL structure for KumaTea seems to be: https://torch.kmtea.eu/whl/stable-cn/torch-1.8.1-cp38-cp38-linux_aarch64.whl
+# Let's try downloading directly if pip fails, to be robust.
+
+if ! python3.8 -c "import torch" 2>/dev/null; then
+    echo "Direct pip install failed, trying wget..."
+    wget https://torch.kmtea.eu/whl/stable-cn/torch-1.8.1-cp38-cp38-linux_aarch64.whl
+    python3.8 -m pip install torch-1.8.1-cp38-cp38-linux_aarch64.whl
+    
+    wget https://torch.kmtea.eu/whl/stable-cn/torchvision-0.9.1-cp38-cp38-linux_aarch64.whl
+    python3.8 -m pip install torchvision-0.9.1-cp38-cp38-linux_aarch64.whl
+fi
 
 echo "PyTorch and Torchvision installed."
 cd ..
