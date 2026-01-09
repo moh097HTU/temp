@@ -19,33 +19,33 @@ sudo apt-get install -y build-essential libopenblas-base libopenmpi-dev libjpeg-
 # Update pip for Python 3.8
 python3.8 -m pip install --upgrade pip
 
-# 2. Install PyTorch for Jetson Nano (Python 3.8 + aarch64)
-# We use a pre-built wheel compatible with JetPack 4.6 (CUDA 10.2 capability)
-# Source: QEngineering/PyTorch-Jetson-Nano
-echo "[2/5] Downloading and installing PyTorch 1.13.0..."
+# 2. Install PyTorch & Torchvision for Jetson Nano (Python 3.8 + aarch64)
+# Source: QEngineering/PyTorch-Jetson-Nano (Hosted on Google Drive)
+echo "[2/5] Downloading and installing PyTorch 1.13.0 & Torchvision 0.14.0..."
 mkdir -p build_temp
 cd build_temp
 
-# URL for PyTorch 1.13.0 wheel for Python 3.8 (aarch64)
-TORCH_WHEEL_URL="https://github.com/Qengineering/PyTorch-Jetson-Nano/raw/main/torch-1.13.0a0+d0d6b1f2.nv22.10-cp38-cp38-linux_aarch64.whl"
+# Install gdown to download from Google Drive
+python3.8 -m pip install gdown
 
-if [ ! -f "torch-1.13.0-cp38.whl" ]; then
-    wget -O torch-1.13.0-cp38.whl "$TORCH_WHEEL_URL"
-fi
+# Download PyTorch 1.13.0
+# ID: 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e -> torch-1.13.0a0+git7c98e70-cp38-cp38-linux_aarch64.whl
+echo "Downloading PyTorch..."
+gdown 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e
+# Since gdown might save with the original filename or "Unknown", we find the .whl
+TORCH_WHEEL=$(find . -maxdepth 1 -name "torch*.whl" | head -n 1)
+python3.8 -m pip install "$TORCH_WHEEL"
 
-python3.8 -m pip install torch-1.13.0-cp38.whl
+# Download Torchvision 0.14.0
+# ID: 19UbYsKHhKnyeJ12VPUwcSvoxJaX7jQZ2 -> torchvision-0.14.0a0+5ce4506-cp38-cp38-linux_aarch64.whl
+echo "Downloading Torchvision..."
+gdown 19UbYsKHhKnyeJ12VPUwcSvoxJaX7jQZ2
+VISION_WHEEL=$(find . -maxdepth 1 -name "torchvision*.whl" | head -n 1)
+python3.8 -m pip install "$VISION_WHEEL"
 
-# 3. Install Torchvision
-# We need to compile torchvision 0.14.0 from source to match PyTorch 1.13.0
-echo "[3/5] Installing Torchvision 0.14.0 (Compiling from source)..."
-if [ -d "vision" ]; then
-    rm -rf vision
-fi
-git clone --branch v0.14.0 https://github.com/pytorch/vision torchvision_repo
-cd torchvision_repo
-export BUILD_VERSION=0.14.0
-python3.8 setup.py install --user
+echo "PyTorch and Torchvision installed."
 cd ..
+
 
 # 4. Install Ultralytics and Project Dependencies
 echo "[4/5] Installing Ultralytics and other dependencies..."
