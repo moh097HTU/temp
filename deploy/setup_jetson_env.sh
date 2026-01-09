@@ -21,30 +21,32 @@ python3.8 -m pip install --upgrade pip
 
 # 2. Install PyTorch & Torchvision for Jetson Nano (Python 3.8 + aarch64)
 # Source: QEngineering/PyTorch-Jetson-Nano (Hosted on Google Drive)
-echo "[2/5] Downloading and installing PyTorch 1.13.0 & Torchvision 0.14.0..."
+# We use PyTorch 1.8.0 which is compatible with JetPack 4.6 (Ubuntu 18.04) libraries like libmpi
+echo "[2/5] Downloading and installing PyTorch 1.8.0 & Torchvision 0.9.0..."
 mkdir -p build_temp
 cd build_temp
 
 # Install gdown to download from Google Drive
 python3.8 -m pip install gdown
 
-# Download PyTorch 1.13.0
-# ID: 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e -> torch-1.13.0a0+git7c98e70-cp38-cp38-linux_aarch64.whl
-echo "Downloading PyTorch..."
-gdown 1MnVB7I4N8iVDAkogJO76CiQ2KRbyXH_e
-# Since gdown might save with the original filename or "Unknown", we find the .whl
+# Download PyTorch 1.8.0
+# Source: QEngineering/PyTorch-Jetson-Nano (GitHub Raw)
+echo "Downloading PyTorch 1.8.0..."
+wget https://github.com/Qengineering/PyTorch-Jetson-Nano/raw/main/torch-1.8.0a0%2Bf5911a3-cp38-cp38-linux_aarch64.whl
 TORCH_WHEEL=$(find . -maxdepth 1 -name "torch*.whl" | head -n 1)
 python3.8 -m pip install "$TORCH_WHEEL"
 
-# Download Torchvision 0.14.0
-# ID: 19UbYsKHhKnyeJ12VPUwcSvoxJaX7jQZ2 -> torchvision-0.14.0a0+5ce4506-cp38-cp38-linux_aarch64.whl
-echo "Downloading Torchvision..."
-gdown 19UbYsKHhKnyeJ12VPUwcSvoxJaX7jQZ2
+# Download Torchvision 0.9.0
+# Source: QEngineering/PyTorch-Jetson-Nano (GitHub Raw)
+echo "Downloading Torchvision 0.9.0..."
+# Note: Torchvision 0.9.0 corresponds to PyTorch 1.8.0
+wget https://github.com/Qengineering/PyTorch-Jetson-Nano/raw/main/torchvision-0.9.0a0%2B01dfa8e-cp38-cp38-linux_aarch64.whl
 VISION_WHEEL=$(find . -maxdepth 1 -name "torchvision*.whl" | head -n 1)
 python3.8 -m pip install "$VISION_WHEEL"
 
 echo "PyTorch and Torchvision installed."
 cd ..
+
 
 
 # 4. Install Ultralytics and Project Dependencies
