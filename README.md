@@ -69,13 +69,14 @@ Production-grade fixed-wing drone vision-guidance system for target tracking wit
 ### Prerequisites
 
 ```bash
-# On Jetson Nano
-sudo apt update
-sudo apt install -y python3.8 python3-pip gstreamer1.0-tools
-pip3 install depthai pymavlink pyzmq numpy ultralytics
+bash
+# On Jetson Nano (Run this script to handle Python 3.8 setup)
+chmod +x deploy/setup_jetson_env.sh
+./deploy/setup_jetson_env.sh
 
-# MAVProxy
+# MAVProxy (Install separately if needed, or check script output)
 pip3 install mavproxy
+
 ```
 
 ### Bench Test (Propellers Removed!)
