@@ -13,7 +13,7 @@ echo "=========================================================="
 # 1. Install System Build Dependencies
 echo "Installing system build tools..."
 apt-get update
-apt-get install -y libusb-1.0-0-dev libzmq3-dev cmake build-essential
+apt-get install -y libusb-1.0-0-dev libzmq3-dev cmake build-essential libxml2-dev libxslt1-dev
 
 # 2. Fix pip/setuptools
 pip install "setuptools<65" "wheel"

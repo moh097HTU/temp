@@ -27,17 +27,17 @@ except ImportError:
 @dataclass
 class OakConfig:
     """OAK-D Lite configuration."""
-    rgb_width: int = 1920
-    rgb_height: int = 1080
+    rgb_width: int = 1280  # Reduced from 1920 for USB bandwidth
+    rgb_height: int = 720  # Reduced from 1080 for USB bandwidth
     rgb_fps: int = 30
     depth_width: int = 640
     depth_height: int = 400
-    depth_enabled: bool = True
+    depth_enabled: bool = False  # Disable depth by default - uses too much bandwidth
     # Camera intrinsics (calibrate for actual camera)
     fx: float = 1000.0
     fy: float = 1000.0
-    cx: float = 960.0
-    cy: float = 540.0
+    cx: float = 640.0  # Updated for 1280 width
+    cy: float = 360.0  # Updated for 720 height
 
 
 class OakBridge:

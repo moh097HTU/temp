@@ -35,14 +35,20 @@ sudo docker pull $IMAGE_NAME
 
 echo "Launching container..."
 echo "Your code will be mounted at: /workspace"
-echo "To exit, type 'exit'"
+echo ""
+echo "IMPORTANT: After entering, run these commands ONCE:"
+echo "  pip install pyzmq pymavlink depthai==2.17.0"
+echo "  cd vision_stack"
+echo "  python3 -m src.main perception"
+echo ""
 
 sudo docker run -it --rm --runtime nvidia --ipc=host --network host \
     --privileged \
-    -v $(pwd)/../..:/workspace \
+    -v /dev/bus/usb:/dev/bus/usb \
+    -v ~/temp:/workspace \
     -w /workspace \
     $IMAGE_NAME \
-    bash -c "echo 'Container Started!'; exec bash"
+    bash
 
 # Note: The volume mount $(pwd)/../.. assumes this script is run from ~/temp/vision_stack/deploy
 # and mounts ~/temp/vision_stack (the project root) to /workspace.
