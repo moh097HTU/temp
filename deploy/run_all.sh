@@ -7,7 +7,8 @@
 # =========================
 # CONFIG - Edit these
 # =========================
-GCS_IP="${GCS_IP:-172.20.10.4}"
+# GCS_IP="${GCS_IP:-172.20.10.4}"
+GCS_IP="${GCS_IP:-172.20.10.5}"
 GCS_PORT=14550
 SERIAL_PORT="/dev/ttyTHS1"
 BAUDRATE=57600

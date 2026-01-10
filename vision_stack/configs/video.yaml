@@ -2,8 +2,8 @@
 
 stream:
   # GCS IP address - update this to your GCS/QGC machine
-  gcs_ip: "172.20.10.4"
-  
+  # gcs_ip: "172.20.10.4"
+  gcs_ip: "172.20.10.5"
   # UDP port for RTP stream
   port: 5600
   
