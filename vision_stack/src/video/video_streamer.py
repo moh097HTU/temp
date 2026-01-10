@@ -235,7 +235,7 @@ class VideoStreamerNode:
     """
     Video streamer node that integrates with OAK bridge.
     
-    Gets frames from OAK and pushes to GStreamer stream.
+    Gets frames from OAK, draws detection overlays, and pushes to GStreamer stream.
     """
 
     def __init__(self, config: VideoConfig, oak_bridge=None):
@@ -250,6 +250,17 @@ class VideoStreamerNode:
         self._streamer = VideoStreamer(config)
         self._oak = oak_bridge
         self._running = False
+        self._latest_tracks = []
+        
+        # Subscribe to tracks from perception
+        try:
+            from ..common.bus import ZmqSubscriber, BusPorts
+            self._track_sub = ZmqSubscriber(BusPorts.sub_endpoint(BusPorts.PERCEPTION))
+            self._track_sub.subscribe("tracks")
+            logger.info("VideoStreamerNode subscribed to tracks")
+        except Exception as e:
+            logger.warning(f"Could not subscribe to tracks: {e}")
+            self._track_sub = None
         
         logger.info("VideoStreamerNode initialized")
 
@@ -274,7 +285,45 @@ class VideoStreamerNode:
         """Stop video streaming."""
         self._running = False
         self._streamer.stop()
+        if self._track_sub:
+            self._track_sub.close()
         logger.info("Video streamer node stopped")
+
+    def _draw_tracks(self, frame: np.ndarray) -> np.ndarray:
+        """Draw bounding boxes on frame."""
+        try:
+            import cv2
+        except ImportError:
+            return frame
+        
+        for track in self._latest_tracks:
+            # Get bounding box
+            x1, y1, x2, y2 = int(track.x1), int(track.y1), int(track.x2), int(track.y2)
+            track_id = track.track_id
+            class_name = track.class_name
+            confidence = track.confidence
+            
+            # Color based on track ID
+            colors = [
+                (0, 255, 0),    # Green
+                (255, 0, 0),    # Blue  
+                (0, 0, 255),    # Red
+                (255, 255, 0),  # Cyan
+                (255, 0, 255),  # Magenta
+                (0, 255, 255),  # Yellow
+            ]
+            color = colors[track_id % len(colors)]
+            
+            # Draw bounding box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            
+            # Draw label
+            label = f"#{track_id} {class_name} {confidence:.2f}"
+            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.rectangle(frame, (x1, y1 - label_size[1] - 10), (x1 + label_size[0], y1), color, -1)
+            cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        
+        return frame
 
     def _run_loop(self) -> None:
         """Main processing loop."""
@@ -283,12 +332,20 @@ class VideoStreamerNode:
         while self._running:
             loop_start = time.time()
             
+            # Check for new tracks (non-blocking)
+            if self._track_sub:
+                msg = self._track_sub.receive(timeout_ms=1)
+                if msg and hasattr(msg, 'tracks'):
+                    self._latest_tracks = msg.tracks
+            
             # Get frame
             frame = None
             if self._oak:
                 frame = self._oak.get_frame()
             
             if frame is not None:
+                # Draw detection overlays
+                frame = self._draw_tracks(frame)
                 self._streamer.push_frame(frame)
             
             # Rate limiting
