@@ -22,7 +22,7 @@ echo "  GCS: $GCS_IP:$GCS_PORT"
 echo "=========================================================="
 
 # Install mavproxy if not present
-pip show pymavlink > /dev/null 2>&1 || pip install pymavlink
+pip show mavproxy > /dev/null 2>&1 || pip install mavproxy
 
 mavproxy.py \
     --master=$SERIAL_PORT \

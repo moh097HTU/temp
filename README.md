@@ -1,154 +1,50 @@
-# Drone Vision-Guidance System
+# ONE-TIME SETUP (Do this once)
 
-Production-grade fixed-wing drone vision-guidance system for target tracking with Jetson Nano, OAK-D Lite camera, and PX4 flight controller.
+# 1. SSH to Jetson
+ssh albayrak@<jetson-ip>
 
-## System Overview
+# 2. Go to deploy folder
+cd ~/temp/deploy
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        JETSON NANO                               │
-│  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌───────────────┐   │
-│  │ OAK-D    │→ │ Perception│→ │Targeting │→ │   Control     │   │
-│  │ Bridge   │  │ (YOLO+    │  │ (Lock +  │  │  (Safety +    │   │
-│  │ (RGB+    │  │ ByteTrack)│  │ Errors)  │  │   Mapper)     │   │
-│  │ Depth)   │  └───────────┘  └──────────┘  └───────┬───────┘   │
-│  └─────┬────┘                                       │           │
-│        │                                            ▼           │
-│        │                               ┌────────────────────┐   │
-│        └──────────────────────────────→│   MAVLink Bridge   │   │
-│                                        │   (Offboard +      │   │
-│                                        │    Telemetry)      │   │
-│                                        └─────────┬──────────┘   │
-│                                                  │              │
-│  ┌──────────────┐    ┌───────────────────────────┼──────────┐   │
-│  │ ESP32 GPIO   │───→│          MAVProxy         │          │   │
-│  │ (Battery)    │    │   (Serial ↔ UDP Router)   │          │   │
-│  └──────────────┘    └───────────┬───────────────┼──────────┘   │
-│                                  │               │              │
-│  ┌──────────────┐                │               │              │
-│  │Video Streamer│────────────────┼───────────────┼──────────┐   │
-│  │ (GStreamer)  │                │               │          │   │
-│  └──────────────┘                │               │          │   │
-└──────────────────────────────────┼───────────────┼──────────┼───┘
-                                   │               │          │
-                          Serial   │      UDP      │   UDP    │
-                          57600    │     14551     │   5600   │
-                                   │               │          │
-                                   ▼               │          │
-                          ┌────────────────┐       │          │
-                          │  Orange Cube   │       │          │
-                          │ (PX4 v1.16.0)  │       │          │
-                          └────────────────┘       │          │
-                                                   │          │
-                          ┌────────────────────────┼──────────┘
-                          │                        │
-                          ▼                        ▼
-                    ┌─────────────────────────────────────┐
-                    │         GCS Computer                │
-                    │     ┌─────────────────────┐         │
-                    │     │   Custom QGC (EXE)  │         │
-                    │     │  - Video Display    │         │
-                    │     │  - Target Selection │         │
-                    │     │  - MAVLink Control  │         │
-                    │     └─────────────────────┘         │
-                    └─────────────────────────────────────┘
-```
+# 3. Pull latest code
+git pull
 
-## Features
+# 4. Make scripts executable
+chmod +x *.sh
 
-- **Perception**: YOLO object detection with ByteTrack multi-object tracking
-- **Target Lock**: Stable target selection and tracking across frames
-- **Control**: Intent-level fixed-wing control (yaw→roll, pitch, range→thrust)
-- **Safety**: Configurable limits, slew-rate, timeout failsafes
-- **Bench Mode**: Thrust forced to 0 for safe hardware testing
-- **MAVLink**: Full PX4 v1.16 offboard integration
-- **Video**: Low-latency GStreamer UDP streaming to QGC
+# 5. Start the container
+./start_docker.sh
 
-## Quick Start
+# 6. INSIDE CONTAINER - Install system packages
+apt-get update && apt-get install -y libxml2-dev libxslt1-dev libusb-1.0-0-dev
 
-### Prerequisites
+# 7. INSIDE CONTAINER - Install Python packages
+pip install pyzmq pymavlink depthai==2.17.0
 
-- **Hardware**: Jetson Nano (Internet connection required for setup)
-- **OS**: JetPack 4.6 (L4T 32.6.1)
+# 8. KEEP THIS TERMINAL OPEN - Don't exit yet!
 
-### Setup (Docker - Recommended)
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Terminal 2 - Save the Container:
 
-We use a Docker container to provide Python 3.8 and CUDA support without modifying the host OS.
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone <repo_url>
-    cd vision_stack/deploy
-    ```
+# Open a NEW SSH session to Jetson
+ssh albayrak@<jetson-ip>
 
-2.  **Start the Container**:
-    This downloads the official Ultralytics image and launches it with GPU/Camera access.
-    ```bash
-    chmod +x start_docker.sh
-    ./start_docker.sh
-    ```
+# Save the container as image
+cd ~/temp/deploy
+./save_container.sh
 
-3.  **Install Dependencies (Inside Container)**:
-    Once inside the container (you will see a `root@...:/workspace#` prompt):
-    ```bash
-    cd deploy
-    chmod +x docker_setup.sh
-    ./docker_setup.sh
-    ```
+# Done! You can close Terminal 1 now.
 
-4.  **Run the Code**:
-    ```bash
-    cd ..
-    python3 -m src.main perception
-    ```
 
-### Bench Test (Propellers Removed!)
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# 1. SSH to Jetson
+ssh albayrak@<jetson-ip>
 
-```bash
-cd vision_stack
+# 2. Start from saved image
+cd ~/temp/deploy
+./start_docker_saved.sh
 
-# Set your GCS IP
-export GCS_IP=192.168.1.100
-
-# Start all components
-./scripts/run_all_bench.sh
-```
-
-### Configuration
-
-All settings are in `vision_stack/configs/`:
-
-```yaml
-# configs/modes/bench_px4_v1_16.yaml
-control:
-  thrust_enabled: false  # ALWAYS 0 in bench mode
-  roll_limit_deg: 20.0
-  pitch_limit_deg: 10.0
-```
-
-## Repository Structure
-
-```
-drone_system/
-├── docs/                    # Documentation
-├── deploy/                  # Systemd services, udev rules
-├── vision_stack/            # Main Python package
-│   ├── configs/             # YAML configuration
-│   ├── scripts/             # Startup scripts
-│   ├── src/                 # Source code
-│   └── tests/               # Unit tests
-└── esp32_firmware/          # Optional ESP32 code
-```
-
-## Safety
-
-> ⚠️ **ALWAYS REMOVE PROPELLERS** before bench testing
-
-- Bench mode forces `thrust = 0`
-- 500ms track timeout → neutral setpoints
-- Configurable roll/pitch limits
-- Failsafe on telemetry loss
-
-## License
-
-MIT License - See [LICENSE](LICENSE)
+# 3. INSIDE CONTAINER - Run everything
+cd /workspace/deploy
+./run_all.sh
