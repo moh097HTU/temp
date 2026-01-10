@@ -239,6 +239,11 @@ class MavlinkBridge:
             if msg is None:
                 break
             
+            # Log COMMAND_LONG messages for debugging
+            if msg.get_type() == 'COMMAND_LONG':
+                logger.info(f"[MAVLINK] Received COMMAND_LONG: cmd={msg.command}, "
+                           f"params=({msg.param1}, {msg.param2}, {msg.param3}, {msg.param4})")
+            
             # Process telemetry
             self._telemetry_receiver.process_message(msg)
             
