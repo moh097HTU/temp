@@ -68,16 +68,39 @@ Production-grade fixed-wing drone vision-guidance system for target tracking wit
 
 ### Prerequisites
 
-```bash
-bash
-# On Jetson Nano (Run this script to handle Python 3.8 setup)
-chmod +x deploy/setup_jetson_env.sh
-./deploy/setup_jetson_env.sh
+- **Hardware**: Jetson Nano (Internet connection required for setup)
+- **OS**: JetPack 4.6 (L4T 32.6.1)
 
-# MAVProxy (Install separately if needed, or check script output)
-pip3 install mavproxy
+### Setup (Docker - Recommended)
 
-```
+We use a Docker container to provide Python 3.8 and CUDA support without modifying the host OS.
+
+1.  **Clone the Repository**:
+    ```bash
+    git clone <repo_url>
+    cd vision_stack/deploy
+    ```
+
+2.  **Start the Container**:
+    This downloads the official Ultralytics image and launches it with GPU/Camera access.
+    ```bash
+    chmod +x start_docker.sh
+    ./start_docker.sh
+    ```
+
+3.  **Install Dependencies (Inside Container)**:
+    Once inside the container (you will see a `root@...:/workspace#` prompt):
+    ```bash
+    cd deploy
+    chmod +x docker_setup.sh
+    ./docker_setup.sh
+    ```
+
+4.  **Run the Code**:
+    ```bash
+    cd ..
+    python3 -m src.main perception
+    ```
 
 ### Bench Test (Propellers Removed!)
 
