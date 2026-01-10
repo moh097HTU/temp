@@ -173,28 +173,34 @@ class TargetingNode:
     def _handle_command(self, msg: dict) -> None:
         """Handle command dict from ZMQ."""
         cmd_type = msg.get('cmd_type')
+        logger.info(f"[TARGETING] Received command: {cmd_type}")
         
         if cmd_type == 'START_TRACKING':
             self._tracking_enabled = True
-            logger.info("Tracking enabled")
+            logger.info("[TARGETING] Tracking ENABLED")
         elif cmd_type == 'STOP_TRACKING':
             self._tracking_enabled = False
             self._lock_manager.clear_lock()
-            logger.info("Tracking disabled")
+            logger.info("[TARGETING] Tracking DISABLED")
         elif cmd_type == 'SELECT_TARGET_ID':
             track_id = msg.get('track_id')
+            logger.info(f"[TARGETING] Select target by ID: {track_id}")
             if track_id and self._current_tracks:
                 self._lock_manager.select_by_id(track_id, self._current_tracks.tracks)
+                logger.info(f"[TARGETING] Lock state: {self._lock_manager.get_lock_state()}")
         elif cmd_type == 'SELECT_TARGET_PIXEL':
             u, v = msg.get('pixel_u'), msg.get('pixel_v')
+            logger.info(f"[TARGETING] Select target by pixel: ({u}, {v})")
             if u is not None and v is not None and self._current_tracks:
                 self._lock_manager.select_by_pixel(u, v, self._current_tracks.tracks)
+                logger.info(f"[TARGETING] Lock state: {self._lock_manager.get_lock_state()}")
         elif cmd_type == 'SET_DEPTH_RANGE':
             self._min_depth = msg.get('min_depth', self._min_depth)
             self._max_depth = msg.get('max_depth', self._max_depth)
-            logger.info(f"Depth range set: {self._min_depth} - {self._max_depth} m")
+            logger.info(f"[TARGETING] Depth range set: {self._min_depth} - {self._max_depth} m")
         elif cmd_type == 'CLEAR_LOCK':
             self._lock_manager.clear_lock()
+            logger.info("[TARGETING] Lock CLEARED")
 
     def _handle_user_command(self, cmd: UserCommand) -> None:
         """Handle UserCommand dataclass."""

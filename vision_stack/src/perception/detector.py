@@ -33,7 +33,9 @@ class DetectorConfig:
     iou_threshold: float = 0.45
     max_detections: int = 100
     device: str = "0"  # CUDA device or "cpu"
-    classes: Optional[List[int]] = None  # Filter specific classes
+    classes: Optional[List[int]] = None  # Filter specific classes (legacy)
+    filter_classes: Optional[List] = None  # New: filter by name or ID
+    class_names: Optional[dict] = None  # Name to ID mapping
 
 
 class Detector(Protocol):
@@ -56,7 +58,7 @@ class YoloDetector:
     """
     YOLO detector using ultralytics.
     
-    Supports YOLOv8/v9/v10 models.
+    Supports YOLOv8/v9/v10/v11 models.
     """
 
     # COCO class names for reference
@@ -89,12 +91,71 @@ class YoloDetector:
         """
         self.config = config
         self._model: Optional[YOLO] = None
+        self._class_filter: Optional[List[int]] = None
         
         if ULTRALYTICS_AVAILABLE:
             self._model = YOLO(config.model_path)
             logger.info(f"Loaded YOLO model: {config.model_path}")
+            
+            # Resolve class filter
+            self._class_filter = self._resolve_class_filter(config)
+            if self._class_filter:
+                logger.info(f"Class filter: {self._class_filter}")
         else:
             logger.warning("Running in stub mode - no real detections")
+
+    def _resolve_class_filter(self, config: DetectorConfig) -> Optional[List[int]]:
+        """
+        Resolve filter_classes to list of class IDs.
+        
+        Supports:
+        - None or "all": no filter
+        - List of ints: direct class IDs
+        - List of strings: resolve via class_names or COCO
+        """
+        filter_classes = config.filter_classes
+        
+        # Handle legacy 'classes' parameter
+        if filter_classes is None and config.classes:
+            return config.classes
+        
+        if filter_classes is None or filter_classes == "all":
+            return None
+        
+        if not isinstance(filter_classes, list):
+            return None
+        
+        # Build name-to-ID mapping
+        name_to_id = {}
+        
+        # Add from config class_names
+        if config.class_names:
+            for class_id, name in config.class_names.items():
+                name_to_id[name.lower()] = int(class_id)
+        
+        # Add from model names if available
+        if self._model and hasattr(self._model, 'names'):
+            for class_id, name in self._model.names.items():
+                name_to_id[name.lower()] = int(class_id)
+        
+        # Add COCO classes as fallback
+        for class_id, name in self.COCO_CLASSES.items():
+            if name.lower() not in name_to_id:
+                name_to_id[name.lower()] = class_id
+        
+        # Resolve each item in filter_classes
+        resolved = []
+        for item in filter_classes:
+            if isinstance(item, int):
+                resolved.append(item)
+            elif isinstance(item, str):
+                item_lower = item.lower()
+                if item_lower in name_to_id:
+                    resolved.append(name_to_id[item_lower])
+                else:
+                    logger.warning(f"Unknown class name: {item}")
+        
+        return resolved if resolved else None
 
     def detect(self, frame: np.ndarray) -> List[Detection]:
         """
@@ -116,7 +177,7 @@ class YoloDetector:
                 iou=self.config.iou_threshold,
                 max_det=self.config.max_detections,
                 device=self.config.device,
-                classes=self.config.classes,
+                classes=self._class_filter,  # Use resolved class filter
                 verbose=False
             )
 

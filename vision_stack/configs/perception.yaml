@@ -5,15 +5,41 @@ detector:
   model_path: "models/best.pt"
   
   # Detection thresholds
-  confidence_threshold: 0.2
-  iou_threshold: 0.2
+  confidence_threshold: 0.5
+  iou_threshold: 0.5
   max_detections: 100
   
   # Device: "0" for first GPU, "cpu" for CPU
   device: "0"
   
-  # Optional: filter to specific classes (COCO class IDs)
-  # classes: [0]  # Only detect persons
+  # ===========================================
+  # CLASS FILTERING
+  # ===========================================
+  # Filter which classes to detect. Options:
+  #   - null or omit: detect ALL classes
+  #   - list of names: ["human"], ["human", "drone"], etc.
+  #   - list of IDs: [0], [0, 2], etc.
+  #   - "all": detect all classes
+  # 
+  # Examples:
+  #   filter_classes: null           # All classes
+  #   filter_classes: ["human"]      # Only humans
+  #   filter_classes: ["human", "drone"]  # Humans and drones
+  #   filter_classes: [0, 2]         # By class ID
+  filter_classes: ["person"]  # Only detect persons (COCO class)
+  
+  # Class name to ID mapping for your custom model
+  # This maps friendly names to YOLO class IDs
+  # For COCO pretrained model: person=0, car=2, truck=7, etc.
+  # For your custom model: human=0, vehicle=1, drone=2
+  class_names:
+    0: "person"     # COCO: person
+    #2: "car"        # COCO: car
+    #7: "truck"      # COCO: truck
+    # Uncomment below for your custom model:
+    # 0: "human"
+    # 1: "vehicle"
+    # 2: "drone"
 
 # Target processing rate
 target_fps: 30.0

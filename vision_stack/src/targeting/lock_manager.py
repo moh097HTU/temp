@@ -215,6 +215,15 @@ class LockManager:
         """Check if currently locked to a target."""
         return self._status == LockStatus.LOCKED
 
+    def get_lock_state(self) -> LockState:
+        """Get current lock state."""
+        return LockState(
+            status=self._status,
+            locked_track_id=self._locked_track_id,
+            lock_timestamp=self._lock_timestamp,
+            frames_since_lock=self._frames_locked
+        )
+
     @property
     def locked_track_id(self) -> Optional[int]:
         """Get the locked track ID."""

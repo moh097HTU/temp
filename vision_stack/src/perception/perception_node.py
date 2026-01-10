@@ -67,6 +67,8 @@ def load_perception_config(
             iou_threshold=perception_cfg.get('detector', {}).get('iou_threshold', 0.45),
             max_detections=perception_cfg.get('detector', {}).get('max_detections', 100),
             device=perception_cfg.get('detector', {}).get('device', '0'),
+            filter_classes=perception_cfg.get('detector', {}).get('filter_classes'),
+            class_names=perception_cfg.get('detector', {}).get('class_names'),
         ),
         tracker=TrackerConfig(
             max_age=tracker_cfg.get('tracker', {}).get('max_age', 30),
