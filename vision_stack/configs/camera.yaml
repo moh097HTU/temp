@@ -4,19 +4,20 @@ camera:
   type: "OAK-D-LITE"
   
   rgb:
-    width: 1920
-    height: 1080
+    width: 1280   # Reduced from 1920 to fix USB bandwidth issues
+    height: 720   # Reduced from 1080 to fix USB bandwidth issues
     fps: 30
   
   depth:
-    enabled: true
+    enabled: false  # Disabled to save USB bandwidth
     width: 640
     height: 400
   
   # Camera intrinsics - CALIBRATE FOR YOUR SPECIFIC CAMERA
-  # These are placeholder values
+  # Updated for 1280x720 resolution
   intrinsics:
-    fx: 1000.0    # Focal length X (pixels)
-    fy: 1000.0    # Focal length Y (pixels)
-    cx: 960.0     # Principal point X (image center)
-    cy: 540.0     # Principal point Y (image center)
+    fx: 666.67    # Focal length X (pixels) - scaled from 1000 for 1280 width
+    fy: 666.67    # Focal length Y (pixels) - scaled from 1000 for 720 height
+    cx: 640.0     # Principal point X (image center)
+    cy: 360.0     # Principal point Y (image center)
+
