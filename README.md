@@ -48,3 +48,13 @@ cd ~/temp/deploy
 # 3. INSIDE CONTAINER - Run everything
 cd /workspace/deploy
 ./run_all.sh
+
+
+
+
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++
+cd /workspace/vision_stack/models
+rm best.pt
+wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt -O best.pt
+cd /workspace/deploy && ./run_all.sh

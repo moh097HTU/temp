@@ -25,15 +25,26 @@ echo "=========================================================="
 # Install mavproxy if not present
 pip show mavproxy > /dev/null 2>&1 || pip install mavproxy future
 
+# Note: MAVProxy config:
+# --master: Serial to flight controller
+# --out udp:GCS_IP:14550: Send telemetry TO QGC
+# --out udp:127.0.0.1:14551: Send to vision stack
+# --master udpin:0.0.0.0:14555: RECEIVE commands FROM QGC
+# 
+# QGC MUST send commands to Jetson_IP:14555
+
 mavproxy.py \
     --master=$SERIAL_PORT \
     --baudrate $BAUDRATE \
     --out=udp:$GCS_IP:$GCS_PORT \
     --out=udp:127.0.0.1:14551 \
+    --master=udpin:0.0.0.0:14555 \
+    --source-system=255 \
     --daemon &
 
 MAVPROXY_PID=$!
 echo "MAVProxy started (PID: $MAVPROXY_PID)"
+echo "  QGC should send commands to Jetson_IP:14555"
 
 # Wait a moment for MAVProxy to initialize
 sleep 2
