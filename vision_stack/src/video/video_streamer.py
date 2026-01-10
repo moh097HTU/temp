@@ -351,9 +351,10 @@ class VideoStreamerNode:
                         
                         # msg is a dict with 'tracks' key (from TrackList dataclass)
                         if isinstance(msg, dict) and 'tracks' in msg:
+                            from types import SimpleNamespace
                             raw_tracks = msg['tracks']
-                            # Convert dicts to track-like objects
-                            self._latest_tracks = [type('Track', (), t) for t in raw_tracks]
+                            # Convert dicts to SimpleNamespace objects for attribute access
+                            self._latest_tracks = [SimpleNamespace(**t) for t in raw_tracks]
                             
                             # Log every 2 seconds
                             if time.time() - last_track_log > 2.0:
