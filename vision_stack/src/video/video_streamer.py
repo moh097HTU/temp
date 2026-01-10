@@ -294,49 +294,71 @@ class VideoStreamerNode:
         try:
             import cv2
         except ImportError:
+            logger.warning("OpenCV not available for drawing")
             return frame
         
+        if len(self._latest_tracks) > 0:
+            logger.debug(f"Drawing {len(self._latest_tracks)} tracks on frame")
+        
         for track in self._latest_tracks:
-            # Get bounding box
-            x1, y1, x2, y2 = int(track.x1), int(track.y1), int(track.x2), int(track.y2)
-            track_id = track.track_id
-            class_name = track.class_name
-            confidence = track.confidence
-            
-            # Color based on track ID
-            colors = [
-                (0, 255, 0),    # Green
-                (255, 0, 0),    # Blue  
-                (0, 0, 255),    # Red
-                (255, 255, 0),  # Cyan
-                (255, 0, 255),  # Magenta
-                (0, 255, 255),  # Yellow
-            ]
-            color = colors[track_id % len(colors)]
-            
-            # Draw bounding box
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            
-            # Draw label
-            label = f"#{track_id} {class_name} {confidence:.2f}"
-            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(frame, (x1, y1 - label_size[1] - 10), (x1 + label_size[0], y1), color, -1)
-            cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            try:
+                # Get bounding box
+                x1, y1, x2, y2 = int(track.x1), int(track.y1), int(track.x2), int(track.y2)
+                track_id = track.track_id
+                class_name = track.class_name
+                confidence = track.confidence
+                
+                # Color based on track ID
+                colors = [
+                    (0, 255, 0),    # Green
+                    (255, 0, 0),    # Blue  
+                    (0, 0, 255),    # Red
+                    (255, 255, 0),  # Cyan
+                    (255, 0, 255),  # Magenta
+                    (0, 255, 255),  # Yellow
+                ]
+                color = colors[track_id % len(colors)]
+                
+                # Draw bounding box
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                
+                # Draw label
+                label = f"#{track_id} {class_name} {confidence:.2f}"
+                label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+                cv2.rectangle(frame, (x1, y1 - label_size[1] - 10), (x1 + label_size[0], y1), color, -1)
+                cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            except Exception as e:
+                logger.error(f"Error drawing track: {e}")
         
         return frame
 
     def _run_loop(self) -> None:
         """Main processing loop."""
         target_period = 1.0 / self.config.fps
+        frame_count = 0
+        last_track_log = time.time()
         
         while self._running:
             loop_start = time.time()
             
             # Check for new tracks (non-blocking)
             if self._track_sub:
-                msg = self._track_sub.receive(timeout_ms=1)
-                if msg and hasattr(msg, 'tracks'):
-                    self._latest_tracks = msg.tracks
+                try:
+                    msg = self._track_sub.receive(timeout_ms=1)
+                    if msg:
+                        if hasattr(msg, 'tracks'):
+                            self._latest_tracks = msg.tracks
+                            # Log every 2 seconds
+                            if time.time() - last_track_log > 2.0:
+                                logger.info(f"[VIDEO] Received {len(self._latest_tracks)} tracks")
+                                last_track_log = time.time()
+                        else:
+                            logger.warning(f"[VIDEO] Received msg without tracks attr: {type(msg)}")
+                except Exception as e:
+                    logger.error(f"[VIDEO] Track receive error: {e}")
+            else:
+                if frame_count == 0:
+                    logger.warning("[VIDEO] No track subscriber available!")
             
             # Get frame
             frame = None
@@ -347,6 +369,7 @@ class VideoStreamerNode:
                 # Draw detection overlays
                 frame = self._draw_tracks(frame)
                 self._streamer.push_frame(frame)
+                frame_count += 1
             
             # Rate limiting
             elapsed = time.time() - loop_start
