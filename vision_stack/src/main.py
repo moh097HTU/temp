@@ -190,13 +190,21 @@ def run_all_components(args):
         os.path.join(config_dir, "esp32_gpio.yaml")
     )
     
+    # Create shared OAK bridge for perception and video
+    from .oak import OakBridge
+    shared_oak = OakBridge(perception_config.camera)
+    
+    # Create perception node with shared OAK
+    perception_node = PerceptionNode(perception_config)
+    perception_node._oak = shared_oak  # Replace with shared bridge
+    
     # Create nodes
     nodes = [
-        ("perception", PerceptionNode(perception_config)),
+        ("perception", perception_node),
         ("targeting", TargetingNode(targeting_config)),
         ("control", ControlNode(control_config)),
         ("mavlink", MavlinkBridge(mavlink_config)),
-        ("video", VideoStreamerNode(video_config)),
+        ("video", VideoStreamerNode(video_config, oak_bridge=shared_oak)),
         ("gpio", Esp32GpioBridge(gpio_config)),
     ]
     
