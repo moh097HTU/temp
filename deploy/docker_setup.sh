@@ -16,7 +16,18 @@ pip install --upgrade pip
 # 1.5 Install System Build Dependencies (Required for lxml, depthai, etc)
 echo "Installing system build tools..."
 apt-get update
-# Added libzmq3-dev (for pyzmq) and libusb-1.0-0-dev (for depthai)
+# Install software-properties-common for add-apt-repository
+apt-get install -y software-properties-common
+
+# Upgrade GCC to 9 (Required for depthai C++17 support)
+add-apt-repository -y ppa:ubuntu-toolchain-r/test
+apt-get update
+apt-get install -y gcc-9 g++-9 libstdc++-9-dev
+
+# Force system to use GCC 9
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+
+# Install other dependencies
 apt-get install -y libxml2-dev libxslt1-dev cmake build-essential libopenblas-dev libzmq3-dev libusb-1.0-0-dev
 
 # 2. Install Dependencies
