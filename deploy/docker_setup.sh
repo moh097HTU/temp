@@ -10,43 +10,16 @@ echo "=========================================================="
 echo "Setting up Vision Stack Dependencies (Inside Docker)"
 echo "=========================================================="
 
-# 1. Install System Build Dependencies FIRST
+# 1. Install System Build Dependencies
 echo "Installing system build tools..."
 apt-get update
-apt-get install -y software-properties-common
+apt-get install -y libusb-1.0-0-dev libzmq3-dev cmake build-essential
 
-# Upgrade GCC to 9 (Required for depthai C++17 <filesystem> support)
-add-apt-repository -y ppa:ubuntu-toolchain-r/test
-apt-get update
-apt-get install -y gcc-9 g++-9 libstdc++-9-dev
-
-# Force system to use GCC 9
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100 --slave /usr/bin/g++ g++ /usr/bin/g++-9
-update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-9 100
-update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-9 100
-
-# CRITICAL: Export CC and CXX so CMake picks them up
-export CC=/usr/bin/gcc-9
-export CXX=/usr/bin/g++-9
-
-echo "Compiler version:"
-gcc --version | head -1
-g++ --version | head -1
-
-# Install other dependencies
-apt-get install -y libxml2-dev libxslt1-dev cmake build-essential libopenblas-dev libzmq3-dev libusb-1.0-0-dev
-
-# 2. CRITICAL: Clear ALL cached builds that used the old compiler
-echo "Clearing cached builds..."
-rm -rf ~/.hunter
-rm -rf ~/.cache/pip
-pip cache purge || true
-
-# 3. Fix pip/setuptools
+# 2. Fix pip/setuptools
 pip install "setuptools<65" "wheel"
 pip install --upgrade pip
 
-# 4. Install Dependencies one by one to isolate failures
+# 3. Install Dependencies 
 echo "Installing pymavlink..."
 pip install pymavlink
 
@@ -56,11 +29,11 @@ pip install pyzmq
 echo "Installing other deps..."
 pip install opencv-python-headless psutil pyyaml scipy pandas matplotlib tqdm
 
-# 5. Install depthai LAST (it's the problematic one)
-echo "Installing depthai (this will take a while to compile)..."
-CC=/usr/bin/gcc-9 CXX=/usr/bin/g++-9 pip install --no-cache-dir depthai
+# 4. Install depthai from Luxonis Artifactory (PRE-BUILT WHEEL - NO COMPILATION!)
+echo "Installing depthai from Luxonis pre-built wheels..."
+pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ depthai
 
-# 6. Verify
+# 5. Verify
 echo "=========================================================="
 echo "Verifying Installation..."
 python3 -c "import torch; print(f'PyTorch: {torch.__version__} (CUDA: {torch.cuda.is_available()})')"
