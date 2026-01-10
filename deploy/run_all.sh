@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # run_all.sh
-# Starts MAVProxy and the Perception module together.
+# Starts MAVProxy and ALL vision stack components.
 # Run this INSIDE the Docker container.
 
 # =========================
@@ -22,7 +22,7 @@ echo "  GCS: $GCS_IP:$GCS_PORT"
 echo "=========================================================="
 
 # Install mavproxy if not present
-pip show mavproxy > /dev/null 2>&1 || pip install mavproxy
+pip show mavproxy > /dev/null 2>&1 || pip install mavproxy future
 
 mavproxy.py \
     --master=$SERIAL_PORT \
@@ -38,14 +38,18 @@ echo "MAVProxy started (PID: $MAVPROXY_PID)"
 sleep 2
 
 # =========================
-# Start Perception Module
+# Start ALL Vision Stack Components
 # =========================
+# This runs: perception, targeting, control, mavlink, video, gpio
+# All communicate via ZMQ internally
 echo "=========================================================="
-echo "Starting Perception Module..."
+echo "Starting ALL Vision Stack Components..."
+echo "  Components: perception, targeting, control, mavlink, video, gpio"
+echo "  GCS IP: $GCS_IP"
 echo "=========================================================="
 
 cd /workspace/vision_stack
-python3 -m src.main perception
+python3 -m src.main all --config-dir configs --gcs-ip $GCS_IP
 
 # Cleanup on exit
 kill $MAVPROXY_PID 2>/dev/null
