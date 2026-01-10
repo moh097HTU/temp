@@ -182,6 +182,10 @@ def run_all_components(args):
     video_config = load_video_config(
         os.path.join(config_dir, "video.yaml")
     )
+    # Override GCS IP if provided via command line
+    gcs_ip = os.environ.get("GCS_IP", "192.168.1.100")
+    video_config.gcs_ip = gcs_ip
+    
     gpio_config = load_esp32_config(
         os.path.join(config_dir, "esp32_gpio.yaml")
     )

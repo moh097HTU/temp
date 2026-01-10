@@ -1,8 +1,8 @@
 # Video Streaming Configuration
 
 stream:
-  # GCS IP address (set via environment or here)
-  gcs_ip: "${GCS_IP:-192.168.1.100}"
+  # GCS IP address - update this to your GCS/QGC machine
+  gcs_ip: "172.20.10.5"
   
   # UDP port for RTP stream
   port: 5600
