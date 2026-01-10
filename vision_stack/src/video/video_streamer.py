@@ -302,11 +302,26 @@ class VideoStreamerNode:
         
         for track in self._latest_tracks:
             try:
-                # Get bounding box
-                x1, y1, x2, y2 = int(track.x1), int(track.y1), int(track.x2), int(track.y2)
-                track_id = track.track_id
-                class_name = track.class_name
-                confidence = track.confidence
+                # Handle both dict-like and object-like access
+                # Track structure: track.bbox.x1 or track['bbox']['x1']
+                if hasattr(track, 'bbox'):
+                    bbox = track.bbox
+                    if isinstance(bbox, dict):
+                        x1, y1, x2, y2 = int(bbox['x1']), int(bbox['y1']), int(bbox['x2']), int(bbox['y2'])
+                    else:
+                        x1, y1, x2, y2 = int(bbox.x1), int(bbox.y1), int(bbox.x2), int(bbox.y2)
+                    track_id = track.track_id if hasattr(track, 'track_id') else 0
+                    class_name = track.label if hasattr(track, 'label') else 'unknown'
+                    confidence = track.confidence if hasattr(track, 'confidence') else 0.0
+                elif isinstance(track, dict) and 'bbox' in track:
+                    bbox = track['bbox']
+                    x1, y1, x2, y2 = int(bbox['x1']), int(bbox['y1']), int(bbox['x2']), int(bbox['y2'])
+                    track_id = track.get('track_id', 0)
+                    class_name = track.get('label', 'unknown')
+                    confidence = track.get('confidence', 0.0)
+                else:
+                    logger.warning(f"Unknown track format: {type(track)}, keys: {dir(track)}")
+                    continue
                 
                 # Color based on track ID
                 colors = [
