@@ -85,34 +85,46 @@ class VideoStreamer:
 
     def _create_pipeline(self) -> None:
         """Create GStreamer pipeline."""
-        # Choose encoder
+        # Choose encoder based on platform
         if self.config.encoder == "nvenc":
-            # NVIDIA hardware encoder (Jetson)
-            encoder_str = "nvv4l2h264enc bitrate={bitrate} ! h264parse".format(
-                bitrate=self.config.bitrate * 1000
+            # NVIDIA hardware encoder (Jetson) - requires nvvidconv for NVMM memory
+            pipeline_str = """
+                appsrc name=source is-live=true block=true format=time do-timestamp=true
+                    caps=video/x-raw,format=BGR,width={width},height={height},framerate={fps}/1 !
+                queue max-size-buffers=4 leaky=downstream !
+                videoconvert !
+                nvvidconv !
+                video/x-raw(memory:NVMM),format=NV12 !
+                nvv4l2h264enc bitrate={bitrate} iframeinterval=30 insert-sps-pps=true preset-level=1 control-rate=1 !
+                h264parse !
+                rtph264pay pt=96 config-interval=1 !
+                udpsink host={host} port={port} sync=false async=false
+            """.format(
+                width=self.config.width,
+                height=self.config.height,
+                fps=self.config.fps,
+                bitrate=self.config.bitrate * 1000,
+                host=self.config.gcs_ip,
+                port=self.config.port
             )
         else:
-            # Software x264 encoder
-            encoder_str = "x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast".format(
-                bitrate=self.config.bitrate
+            # Software x264 encoder (non-Jetson)
+            pipeline_str = """
+                appsrc name=source is-live=true format=time do-timestamp=true !
+                video/x-raw,format=BGR,width={width},height={height},framerate={fps}/1 !
+                videoconvert !
+                video/x-raw,format=I420 !
+                x264enc tune=zerolatency bitrate={bitrate} speed-preset=ultrafast !
+                rtph264pay config-interval=1 pt=96 !
+                udpsink host={host} port={port} sync=false
+            """.format(
+                width=self.config.width,
+                height=self.config.height,
+                fps=self.config.fps,
+                bitrate=self.config.bitrate,
+                host=self.config.gcs_ip,
+                port=self.config.port
             )
-
-        pipeline_str = """
-            appsrc name=source is-live=true format=time do-timestamp=true !
-            video/x-raw,format=BGR,width={width},height={height},framerate={fps}/1 !
-            videoconvert !
-            video/x-raw,format=I420 !
-            {encoder} !
-            rtph264pay config-interval=1 pt=96 !
-            udpsink host={host} port={port} sync=false
-        """.format(
-            width=self.config.width,
-            height=self.config.height,
-            fps=self.config.fps,
-            encoder=encoder_str,
-            host=self.config.gcs_ip,
-            port=self.config.port
-        )
 
         try:
             self._pipeline = Gst.parse_launch(pipeline_str)
