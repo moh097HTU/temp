@@ -138,7 +138,11 @@ class YoloDetector:
                         y2=float(xyxy[3])
                     )
                     
-                    label = self.COCO_CLASSES.get(cls, f"class_{cls}")
+                    # Use model's class names if available, fallback to COCO
+                    if hasattr(result, 'names') and cls in result.names:
+                        label = result.names[cls]
+                    else:
+                        label = self.COCO_CLASSES.get(cls, f"class_{cls}")
                     
                     detections.append(Detection(
                         bbox=bbox,
