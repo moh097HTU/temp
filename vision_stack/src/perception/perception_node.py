@@ -130,6 +130,7 @@ class PerceptionNode:
     def _run_loop(self) -> None:
         """Main processing loop."""
         target_period = 1.0 / self.config.target_fps
+        last_detection_log = time.time()
         
         while self._running:
             loop_start = time.time()
@@ -142,6 +143,11 @@ class PerceptionNode:
 
             # Run detection
             detections = self._detector.detect(frame)
+            
+            # Debug: log detection count every 2 seconds
+            if time.time() - last_detection_log > 2.0:
+                logger.info(f"[PERCEPTION] Frame {self._frame_count}: {len(detections)} detections")
+                last_detection_log = time.time()
             
             # Run tracking
             tracks = self._tracker.update(detections, frame)
