@@ -8,8 +8,16 @@ echo "=========================================================="
 echo "Setting up Vision Stack Dependencies (Inside Docker)"
 echo "=========================================================="
 
-# 1. Update pip
+# 1. Update pip & Fix Setuptools (Downgrade required for some ARM builds)
+# The "canonicalize_version" error is due to incompatible setuptools/packaging versions.
+pip install "setuptools<65" "wheel"
 pip install --upgrade pip
+
+# 1.5 Install System Build Dependencies (Required for lxml, depthai, etc)
+echo "Installing system build tools..."
+apt-get update
+# Added libzmq3-dev (for pyzmq) and libusb-1.0-0-dev (for depthai)
+apt-get install -y libxml2-dev libxslt1-dev cmake build-essential libopenblas-dev libzmq3-dev libusb-1.0-0-dev
 
 # 2. Install Dependencies
 # Ultralytics and PyTorch are ALREADY INSTALLED in this image.

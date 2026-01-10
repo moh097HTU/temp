@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Jetson + OAK-D Lite + PX4 v1.16 + MAVProxy + Custom QGC (GCS PC) + ESP32: Architecture</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+            line-height: 1.35;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0.2rem 0 0.6rem;
+        }
+
+        .note {
+            color: #333;
+            margin-bottom: 18px;
+        }
+
+        .wrap {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 22px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+
+        .legend {
+            font-size: 0.95rem;
+            color: #444;
+            margin-bottom: 10px;
+        }
+
+        .bullets {
+            margin: 8px 0 0;
+        }
+
+        pre.mermaid {
+            background: #fafafa;
+            border: 1px solid #eee;
+            padding: 12px;
+            border-radius: 10px;
+            overflow: auto;
+            white-space: pre;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .mermaid-error {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #f3c2c2;
+            background: #fff5f5;
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            white-space: pre-wrap;
+        }
+
+        code.inline {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background: #f6f6f6;
+            padding: 1px 6px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+    </style>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/mermaid@10.9.5/dist/mermaid.min.js"></script>
+    <script defer>
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (!window.mermaid) {
+                console.error("Mermaid did not load.");
+                return;
+            }
+
+            mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: "strict",
+                theme: "default"
+            });
+
+            const blocks = Array.from(document.querySelectorAll("pre.mermaid"));
+
+            for (let i = 0; i < blocks.length; i++) {
+                const el = blocks[i];
+                const code = el.textContent.trim();
+
+                try {
+                    await mermaid.parse(code);
+
+                    const id = `m_${i}_${Date.now()}`;
+                    const out = await mermaid.render(id, code);
+
+                    const wrap = document.createElement("div");
+                    wrap.className = "mermaid";
+                    wrap.innerHTML = out.svg;
+
+                    el.replaceWith(wrap);
+                    if (typeof out.bindFunctions === "function") out.bindFunctions(wrap);
+
+                } catch (e) {
+                    console.error("Mermaid render failed:", e);
+
+                    const msg =
+                        e?.str ||
+                        e?.message ||
+                        (typeof e === "string" ? e : JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
+
+                    const err = document.createElement("div");
+                    err.className = "mermaid-error";
+                    err.textContent = `Mermaid failed to render this diagram:\n\n${msg}\n`;
+
+                    el.insertAdjacentElement("afterend", err);
+                }
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <h1>System Architecture & Dataflow</h1>
+    <div class="note">
+        <div><b>Bench validation mode (plane on table)</b>: When tracking starts, Jetson streams Offboard attitude
+            setpoints to PX4
+            to verify control surfaces move correctly (no flight dynamics).</div>
+        <ul class="bullets">
+            <li><b>PX4</b>: v1.16.0 Stable Release</li>
+            <li><b>Offboard contract</b>: stream <code class="inline">SET_ATTITUDE_TARGET</code> @ <b>30 Hz</b>,
+                <b>thrust=0</b> (bench), roll/pitch from vision errors
+            </li>
+            <li><b>MAVLink hub</b>: MAVProxy runs on Jetson, owns TELEM1 (serial 57600), forwards MAVLink to Jetson apps
+                + GCS PC</li>
+            <li><b>Custom QGC fork</b>: runs on <b>GCS computer</b> like normal QGC; receives MAVLink over UDP and video
+                over UDP (GStreamer)</li>
+            <li><b>ESP32</b>: battery switch signals via GPIO into Jetson, injected into MAVLink for dashboard display
+                in QGC</li>
+        </ul>
+    </div>
+
+    <div class="wrap">
+        <div class="card">
+            <h2>Dataflow</h2>
+
+            <pre class="mermaid">flowchart LR
+  %% Sensors
+  subgraph OAK[OAKD Lite]
+    RGB[RGB Camera]
+    DEPTH[Stereo Depth]
+  end
+
+  subgraph ESP[ESP32 Monitor]
+    SW[GPIO signals BAT1_ACTIVE BAT2_ACTIVE]
+  end
+
+  %% Jetson Apps
+  subgraph JET[Jetson Nano]
+    OAKB[oak_bridge DepthAI ingest]
+    PER[perception YOLO tracker]
+    TGT[targeting lock errors gating]
+    CTRL[control_mapper yaw_to_roll pitch_to_pitch]
+    SAFE[safety_manager clamps rate_limit timeout]
+    VS[video_streamer UDP GStreamer]
+    EBR[esp32_gpio_bridge debounce]
+    MB[mavlink_bridge Offboard stream 30Hz]
+    MP[MAVProxy Router master TELEM1 57600]
+  end
+
+  %% Flight Controller
+  subgraph FC[Flight Controller]
+    TEL[TELEM1 UART 57600]
+    PX4[PX4 v1.16.0]
+    ACT[Control outputs servos]
+  end
+
+  %% GCS Computer
+  subgraph GCS[GCS Computer]
+    QGC[Custom QGC exe video UI MAVLink cmds]
+  end
+
+  %% Vision path
+  RGB --> OAKB
+  DEPTH --> OAKB
+
+  OAKB -->|RGB frames| PER
+  PER -->|tracks id bbox conf ts| TGT
+  OAKB -->|depth query u v to Z| TGT
+
+  %% Video to GCS (UDP)
+  OAKB --> VS
+  VS -->|UDP video to GCS IP| QGC
+
+  %% QGC Tracking Control via MAVLink (to MAVProxy on Jetson)
+  QGC -->|MAVLink user cmds start stop select u v set min max| MP
+
+  %% Targeting -> control -> safety
+  TGT -->|yaw_err pitch_err range_err| CTRL
+  CTRL --> SAFE
+
+  %% Bench Offboard Contract
+  SAFE -->|roll_sp pitch_sp thrust 0| MB
+  MB -->|SET_ATTITUDE_TARGET 30Hz| MP
+
+  %% MAVProxy owns serial link (avoid <-->)
+  TEL --> MP
+  MP --> TEL
+  TEL --> PX4
+  PX4 --> ACT
+
+  %% Telemetry fanout
+  MP -->|UDP telemetry to Jetson apps| MB
+  MP -->|UDP telemetry to GCS| QGC
+
+  %% ESP32 battery state injection
+  SW --> EBR
+  EBR -->|battery_state| MB
+  MB -->|custom MAVLink telemetry named values| MP
+            </pre>
+
+            <div class="legend" style="margin-top:10px;">
+                Network note: configure MAVProxy outputs for both <b>localhost</b> (Jetson apps) and <b>GCS
+                    IP/broadcast</b> (QGC).
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Architecture (sequence)</h2>
+            <div class="legend">Rendered with Mermaid. Shows Offboard loop + networked QGC control + UDP video.</div>
+
+            <pre class="mermaid">sequenceDiagram
+  participant OAK as OAKD Lite
+  participant OAKB as oak_bridge
+  participant PER as perception
+  participant TGT as targeting
+  participant SAFE as safety_manager
+  participant MB as mavlink_bridge
+  participant MP as MAVProxy Jetson hub
+  participant FC as PX4 TELEM1 57600
+  participant VS as video_streamer
+  participant QGC as Custom QGC GCS PC
+  participant ESP as ESP32
+  participant EBR as esp32_gpio_bridge
+
+  Note over MB,FC: Bench Mode table stream SET_ATTITUDE_TARGET 30Hz thrust 0
+
+  %% Video path to GCS
+  OAK->>OAKB: RGB and depth
+  OAKB->>VS: RGB stream
+  VS->>QGC: UDP video GStreamer
+
+  %% QGC control to Jetson MAVProxy
+  QGC->>MP: user cmds start select stop set ranges
+  MP->>QGC: telemetry over UDP
+
+  %% MAVProxy owns serial (avoid <->)
+  MP->>FC: MAVLink serial TELEM1
+  FC->>MP: MAVLink serial TELEM1
+
+  %% Perception -> targeting
+  OAKB->>PER: RGB frame
+  PER->>TGT: tracks id bbox conf
+  OAKB->>TGT: depth query u v to Z
+
+  %% Offboard loop
+  loop every 33ms 30Hz
+    TGT->>SAFE: yaw_err pitch_err range_err validity
+    SAFE->>SAFE: clamp filter rate_limit timeout
+    SAFE->>MB: roll_sp pitch_sp thrust 0
+    MB->>MP: SET_ATTITUDE_TARGET UDP local
+    MP->>FC: setpoint over serial
+    FC->>MP: telemetry
+    MP->>MB: telemetry UDP local
+    MP->>QGC: telemetry UDP network
+  end
+
+  %% ESP32 battery state injection to QGC dashboard
+  ESP->>EBR: GPIO BAT1 BAT2
+  EBR->>MB: battery_state debounced
+  MB->>MP: custom MAVLink telemetry named values
+  MP->>QGC: custom telemetry UDP network
+            </pre>
+        </div>
+
+        <div class="card">
+            <h2>Bench Offboard “contract” (human-readable)</h2>
+            <div class="legend">This is the operational agreement between your Jetson stack and PX4.</div>
+            <ul class="bullets">
+                <li><b>Rate</b>: send attitude setpoints at <b>30 Hz</b> continuously while tracking is active.</li>
+                <li><b>Bench mode</b>: set <b>thrust = 0</b> always.</li>
+                <li><b>Mapping</b>: <b>yaw_error → roll_sp</b>, (optional) <b>pitch_error → pitch_sp</b>, <b>range_error
+                        → throttle</b> (disabled on bench).</li>
+                <li><b>Limits</b>: roll_sp clamp (e.g., ±20°), pitch_sp clamp (e.g., ±10°), rate-limit setpoint changes.
+                </li>
+                <li><b>Gating</b>: only send non-zero setpoints if target lock is valid and detection is fresh;
+                    otherwise send neutral (0,0).</li>
+                <li><b>Failsafe</b>: if tracking stream/lock is stale → neutral setpoints immediately; optionally
+                    command mode exit.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete System Data Flow</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --purple: #9333ea;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f1f5f9;
+            color: var(--dark);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--dark);
+        }
+        .network-diagram {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .node {
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 2px solid var(--dark);
+            box-sizing: border-box;
+        }
+        .jetson {
+            background: #dbeafe;
+            border-color: var(--primary);
+        }
+        .qgc {
+            background: #dcfce7;
+            border-color: var(--success);
+        }
+        .fc {
+            background: #fae8ff;
+            border-color: var(--purple);
+        }
+        .arrow-box {
+            position: relative;
+            padding: 15px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .arrow-direction {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 4px;
+        }
+        .packet-type {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .video-type {
+            color: var(--danger);
+        }
+        .mav-type {
+            color: var(--primary);
+        }
+        .cmd-type {
+            color: var(--warning);
+        }
+        .data-list {
+            text-align: left;
+            font-size: 12px;
+            margin: 0;
+            padding-left: 15px;
+            color: #475569;
+        }
+        .data-list li {
+            margin-bottom: 2px;
+        }
+        .port-tag {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #475569;
+            margin-left: 5px;
+            font-weight: normal;
+        }
+        /* Layout helpers */
+        .center-channel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+        .channel-label {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: bold;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+        p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Complete System Data Flow</h1>
+        <div class="network-diagram">
+            <!-- LEFT: JETSON -->
+            <div class="column">
+                <div class="node jetson">
+                    <h3>Jetson Nano</h3>
+                    <p>Vision Stack</p>
+                    <div style="font-size:10px; margin-top:5px; color:var(--primary)">192.168.1.xxx</div>
+                </div>
+                <div class="node fc">
+                    <h3>Flight Controller</h3>
+                    <p>Connected via UART</p>
+                </div>
+            </div>
+            <!-- MIDDLE: DATA CHANNELS -->
+            <div class="column">
+                <!-- Video Channel -->
+                <div class="channel-label">Video Channel (UDP Unicast)</div>
+                <div class="arrow-box">
+                    <div class="arrow-direction">Jetson &rarr; QGC <span class="port-tag">Port 5600</span></div>
+                    <div class="packet-type video-type">RTP Stream (H.264)</div>
+                    <ul class="data-list">
+                        <li><strong>Source</strong>: OAK-D Camera</li>
+                        <li><strong>Resolution</strong>: 1280x720 @ 30fps (Configurable)</li>
+                        <li><strong>Protocol</strong>: GStreamer/UDP</li>
+                    </ul>
+                </div>
+                <!-- Custom Telemetry Channel -->
+                <div class="channel-label">MAVLink Telemetry (UDP)</div>
+                <div class="arrow-box">
+                    <div class="arrow-direction">Jetson &rarr; QGC <span class="port-tag">Port 14550</span></div>
+                    <div class="packet-type mav-type">NAMED_VALUE_INT / FLOAT</div>
+                    <ul class="data-list">
+                        <li><strong>BAT1/2_ACTIVE</strong>: Battery GPIO Status</li>
+                        <li><strong>TRK_COUNT</strong>: Number of tracked objects</li>
+                        <li><strong>TRK_LOCKED</strong>: 1 if target locked, else 0</li>
+                        <li><strong>TRK_LOCK_ID</strong>: ID of locked target</li>
+                        <li><strong>TRK_YAW/PIT_ERR</strong>: Tracking error angles</li>
+                    </ul>
+                </div>
+                <!-- Command Channel -->
+                <div class="channel-label">MAVLink Commands (UDP)</div>
+                <div class="arrow-box">
+                    <div class="arrow-direction">QGC &rarr; Jetson <span class="port-tag">Port 14551</span></div>
+                    <div class="packet-type cmd-type">COMMAND_LONG (User Range)</div>
+                    <ul class="data-list">
+                        <li><strong>31100</strong>: START_TRACKING</li>
+                        <li><strong>31101</strong>: STOP_TRACKING</li>
+                        <li><strong>31102</strong>: SELECT_TARGET_ID (param1=ID)</li>
+                        <li><strong>31103</strong>: SELECT_PIXEL (param1=X, param2=Y)</li>
+                    </ul>
+                </div>
+                <!-- Standard Telemetry Channel -->
+                <div class="channel-label">Standard Telemetry (Pass-through)</div>
+                <div class="arrow-box">
+                    <div class="arrow-direction">Flight Controller &rarr; Jetson &rarr; QGC</div>
+                    <div class="packet-type mav-type">Standard MAVLink</div>
+                    <ul class="data-list">
+                        <li><strong>HEARTBEAT</strong>: System status & Mode</li>
+                        <li><strong>SYS_STATUS</strong>: Main battery voltage/current</li>
+                        <li><strong>GPS_RAW_INT</strong>: Position data</li>
+                        <li><strong>ATTITUDE</strong>: Roll/Pitch/Yaw</li>
+                    </ul>
+                </div>
+            </div>
+            <!-- RIGHT: QGC -->
+            <div class="column">
+                <div class="node qgc">
+                    <h3>QGC</h3>
+                    <p>Ground Control Station</p>
+                    <div style="font-size:10px; margin-top:5px; color:var(--success)">192.168.1.100</div>
+                </div>
+                <div
+                    style="background: #f8fafc; padding: 15px; border-radius: 8px; font-size: 12px; color: #64748b; margin-top: 20px; border: 1px dashed #cbd5e1;">
+                    <strong>Note on Routing:</strong><br>
+                    All MAVLink traffic is routed via <strong>MAVProxy</strong> running on the Jetson.
+                    <br><br>
+                    Video is sent directly from the <strong>Video Streamer</strong> process.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
