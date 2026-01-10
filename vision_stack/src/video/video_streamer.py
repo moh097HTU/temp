@@ -344,16 +344,29 @@ class VideoStreamerNode:
             # Check for new tracks (non-blocking)
             if self._track_sub:
                 try:
-                    msg = self._track_sub.receive(timeout_ms=1)
-                    if msg:
-                        if hasattr(msg, 'tracks'):
-                            self._latest_tracks = msg.tracks
+                    result = self._track_sub.receive(timeout_ms=1)
+                    if result:
+                        # receive() returns (topic, message) tuple
+                        topic, msg = result
+                        
+                        # msg is a dict with 'tracks' key (from TrackList dataclass)
+                        if isinstance(msg, dict) and 'tracks' in msg:
+                            raw_tracks = msg['tracks']
+                            # Convert dicts to track-like objects
+                            self._latest_tracks = [type('Track', (), t) for t in raw_tracks]
+                            
                             # Log every 2 seconds
                             if time.time() - last_track_log > 2.0:
                                 logger.info(f"[VIDEO] Received {len(self._latest_tracks)} tracks")
                                 last_track_log = time.time()
+                        elif hasattr(msg, 'tracks'):
+                            # Direct TrackList object
+                            self._latest_tracks = msg.tracks
+                            if time.time() - last_track_log > 2.0:
+                                logger.info(f"[VIDEO] Received {len(self._latest_tracks)} tracks (obj)")
+                                last_track_log = time.time()
                         else:
-                            logger.warning(f"[VIDEO] Received msg without tracks attr: {type(msg)}")
+                            logger.warning(f"[VIDEO] Unknown msg format: {type(msg)}")
                 except Exception as e:
                     logger.error(f"[VIDEO] Track receive error: {e}")
             else:
